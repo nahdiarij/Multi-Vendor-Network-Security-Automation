@@ -1,0 +1,70 @@
+{
+  "version": 4,
+  "terraform_version": "1.15.6",
+  "serial": 59,
+  "lineage": "ef0e7af1-11d1-41df-81e6-d2a2b072b063",
+  "outputs": {
+    "mgmt_network_name": {
+      "value": "mgmt-network",
+      "type": "string"
+    },
+    "r1_name": {
+      "value": "R1-Terraform",
+      "type": "string"
+    },
+    "r2_name": {
+      "value": "R2-Terraform",
+      "type": "string"
+    },
+    "sw1_name": {
+      "value": "SW1-Terraform",
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "libvirt_network",
+      "name": "mgmt_network",
+      "provider": "provider[\"registry.terraform.io/dmacvicar/libvirt\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "addresses": [
+              "192.168.100.0/24"
+            ],
+            "autostart": true,
+            "bridge": "virbr1",
+            "dhcp": [
+              {
+                "enabled": true
+              }
+            ],
+            "dns": [
+              {
+                "enabled": false,
+                "forwarders": [],
+                "hosts": [],
+                "local_only": false,
+                "srvs": []
+              }
+            ],
+            "dnsmasq_options": [],
+            "domain": null,
+            "id": "9eb31f47-faa8-40b2-bf38-39c52b85623f",
+            "mode": "nat",
+            "mtu": null,
+            "name": "mgmt-network",
+            "routes": [],
+            "xml": []
+          },
+          "sensitive_attributes": [],
+          "identity_schema_version": 0,
+          "private": "bnVsbA=="
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
