@@ -8,3 +8,7 @@ This directory contains the network architecture diagrams and topology of the Mu
 - Multi-layer network architecture diagram
 - Network segmentation overview
 - Security zones and connectivity
+
+- ## Physical Network Topology
+
+![Physical Network Topology](Architecture-physique2.png)
