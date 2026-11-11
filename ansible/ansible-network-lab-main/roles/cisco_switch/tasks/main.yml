@@ -1,0 +1,25 @@
+---
+- name: Collecter config switch
+  cisco.ios.ios_command:
+    commands:
+      - show running-config
+      - show vlan brief
+      - show interfaces status
+  register: switch_info
+
+- name: Sauvegarder config switch
+  copy:
+    content: "{{ switch_info.stdout[0] }}"
+    dest: "{{ playbook_dir }}/backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}/{{ inventory_hostname }}_running.cfg"
+  delegate_to: localhost
+
+- name: Déployer VLANs
+  cisco.ios.ios_vlans:
+    config: "{{ vlans | default([]) }}"
+    state: merged
+  when: vlans is defined
+
+- name: Sauvegarder configuration
+  cisco.ios.ios_command:
+    commands:
+      - write memory

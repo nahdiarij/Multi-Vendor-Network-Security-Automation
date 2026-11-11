@@ -1,0 +1,139 @@
+---
+# ============================================
+# ASAv-bas ACL
+# ============================================
+- name: Deploy ACL on ASAv-bas
+  hosts: ASAv-bas
+  gather_facts: no
+
+  tasks:
+    - name: Configure OUTSIDE_IN and INSIDE_IN ACL
+      cisco.asa.asa_command:
+        commands:
+          - conf t
+          - access-list OUTSIDE_IN extended permit esp host 10.x.x.x host 172.x.x.x
+          - access-list OUTSIDE_IN extended permit udp host 10.x.x.x host 172.x.x.x eq isakmp
+          - access-list OUTSIDE_IN extended permit udp host 10.x.x.x host 172.x.x.x eq 4500
+          - access-list OUTSIDE_IN extended permit icmp 10.x.x.x 255.x.x.x any
+          - access-list INSIDE_IN extended permit ip 192.x.x.x 255.x.x.x 10.x.x.x 255.x.x.x
+          - access-list INSIDE_IN extended permit ip 192.x.x.x 255.x.x.x 10.x.x.x 255.x.x.x
+          - access-list INSIDE_IN extended permit udp host 172.x.x.x host 10.x.x.x eq isakmp
+          - access-list INSIDE_IN extended permit esp host 172.x.x.x host 10.x.x.x
+          - access-list INSIDE_IN extended permit udp host 172.x.x.x host 10.x.x.x eq 4500
+          - access-list INSIDE_IN extended permit icmp 172.x.x.x 255.x.x.x any
+          - access-group OUTSIDE_IN in interface outside
+          - access-group INSIDE_IN in interface inside
+          - end
+          - write memory
+
+# ============================================
+# ASAv-haut ACL
+# ============================================
+- name: Deploy ACL on ASAv-haut
+  hosts: ASAv-haut
+  gather_facts: no
+
+  tasks:
+    - name: Configure TRANSIT_IN, INSIDE_IN, OUTSIDE_IN ACL
+      cisco.asa.asa_command:
+        commands:
+          - conf t
+          - access-list TRANSIT_IN extended permit ip 192.x.x.x 255.255.255.0 10.x.x.x 255.x.x.x
+          - access-list TRANSIT_IN extended permit ip 192.x.x.x 255.255.255.0 10.x.x.x 255.x.x.x
+          - access-list TRANSIT_IN extended permit udp host 172.x.x.x host 10.x.x.x eq isakmp
+          - access-list TRANSIT_IN extended permit udp host 172.x.x.x host 10.x.x.x eq 4500
+          - access-list TRANSIT_IN extended permit esp host 172.x.x.x host 10.x.x.x
+          - access-list TRANSIT_IN extended permit icmp 10.0.0.0 255.255.255.0 any
+          - access-list TRANSIT_IN extended permit udp host 172.x.x.x host 10.x.x.x eq isakmp
+          - access-list TRANSIT_IN extended permit udp host 172.x.x.x host 10.x.x.x eq 4500
+          - access-list TRANSIT_IN extended permit esp host 172.x.x.x host 10.x.x.x
+          - access-list TRANSIT_IN extended permit icmp 10.x.x.x 255.255.255.0 10.x.x.x 255.x.x.x
+          - access-list INSIDE_IN extended permit icmp host 10.x.x.x any
+          - access-list INSIDE_IN extended permit ip host 10.x.x.x any
+          - access-list INSIDE_IN extended permit icmp host 10.x.x.x 10.x.x.x 255.255.255.0
+          - access-list INSIDE_IN extended permit icmp host 10.x.x.x 10.x.x.x 255.255.255.0
+          - access-list OUTSIDE_IN extended permit ip 10.x.x.x 255.255.255.0 192.x.x.x 255.255.255.0
+          - access-list OUTSIDE_IN extended permit ip 10.x.x.x 255.255.255.0 192.x.x.x 255.255.255.0
+          - access-list OUTSIDE_IN extended permit esp host 10.x.x.x host 172.x.x.x
+          - access-list OUTSIDE_IN extended permit udp host 10.x.x.x host 172.x.x.x eq isakmp
+          - access-list OUTSIDE_IN extended permit icmp 10.x.x.x 255.255.255.0 any
+          - access-list OUTSIDE_IN extended permit icmp 10.x.x.x 255.255.255.0 host 10.x.x.x
+          - access-list OUTSIDE_IN extended permit icmp 10.x.x.x 255.255.255.0 host 10.x.x.x
+          - access-group TRANSIT_IN in interface transit
+          - access-group INSIDE_IN in interface inside
+          - access-group OUTSIDE_IN in interface outside
+          - end
+
+- name: Deploy Firewall Policy on Fortinet1
+  hosts: Fortinet1
+  gather_facts: no
+
+  tasks:
+    - name: Update firewall policies Fortinet1 via API
+      uri:
+        url: "http://{{ ansible_host }}/api/v2/cmdb/firewall/policy/{{ item.policyid }}"
+        method: PUT
+        headers:
+          Authorization: "Bearer xGjtdHQs5h80nx4mGkgfjH7rj8hdbb"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "{{ item.name }}"
+          srcintf:
+            - name: "{{ item.srcintf }}"
+          dstintf:
+            - name: "{{ item.dstintf }}"
+          action: accept
+          srcaddr:
+            - name: "{{ item.srcaddr }}"
+          dstaddr:
+            - name: "{{ item.dstaddr }}"
+          schedule: always
+          service:
+            - name: ALL
+          nat: "{{ item.nat | default('disable') }}"
+        status_code: [200, 201]
+        validate_certs: no
+      loop:
+        - { policyid: 1, name: "LAN-to-VPN42", srcintf: "port2", dstintf: "VPN-to-FGT42", srcaddr: "LAN-FGT41", dstaddr: "LAN-FGT42" }
+        - { policyid: 2, name: "VPN42-to-LAN", srcintf: "VPN-to-FGT42", dstintf: "port2", srcaddr: "LAN-FGT42", dstaddr: "LAN-FGT41" }
+        - { policyid: 3, name: "DC2-to-VPN42", srcintf: "port2", dstintf: "VPN-to-FGT42", srcaddr: "DC2-FTP", dstaddr: "LAN-FGT42" }
+        - { policyid: 4, name: "VPN42-to-DC2", srcintf: "VPN-to-FGT42", dstintf: "port2", srcaddr: "LAN-FGT42", dstaddr: "DC2-FTP" }
+        - { policyid: 5, name: "LAN-to-WAN", srcintf: "port2", dstintf: "port1", srcaddr: "LAN-FGT41", dstaddr: "all", nat: "enable" }
+
+- name: Deploy Firewall Policy on Fortinet2
+  hosts: Fortinet2
+  gather_facts: no
+
+  tasks:
+    - name: Update firewall policies Fortinet2 via API
+      uri:
+        url: "http://{{ ansible_host }}/api/v2/cmdb/firewall/policy/{{ item.policyid }}"
+        method: PUT
+        headers:
+          Authorization: "Bearer z0dy0b31QbGtds53mck0h6ny8g9frQ"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: "{{ item.name }}"
+          srcintf:
+            - name: "{{ item.srcintf }}"
+          dstintf:
+            - name: "{{ item.dstintf }}"
+          action: accept
+          srcaddr:
+            - name: "{{ item.srcaddr }}"
+          dstaddr:
+            - name: "{{ item.dstaddr }}"
+          schedule: always
+          service:
+            - name: ALL
+          nat: "{{ item.nat | default('disable') }}"
+        status_code: [200, 201]
+        validate_certs: no
+      loop:
+        - { policyid: 1, name: "LAN-to-VPN41", srcintf: "port1", dstintf: "VPN-to-FGT41", srcaddr: "LAN-FGT42", dstaddr: "LAN-FGT41" }
+        - { policyid: 2, name: "VPN41-to-LAN", srcintf: "VPN-to-FGT41", dstintf: "port1", srcaddr: "LAN-FGT41", dstaddr: "LAN-FGT42" }
+        - { policyid: 3, name: "LAN-to-WAN", srcintf: "port1", dstintf: "port2", srcaddr: "LAN-FGT42", dstaddr: "all", nat: "enable" }
+        - { policyid: 4, name: "LAN-to-DC2", srcintf: "port1", dstintf: "VPN-to-FGT41", srcaddr: "LAN-FGT42", dstaddr: "DC2-FTP" }
+        - { policyid: 5, name: "DC2-to-LAN", srcintf: "VPN-to-FGT41", dstintf: "port1", srcaddr: "DC2-FTP", dstaddr: "LAN-FGT42" }

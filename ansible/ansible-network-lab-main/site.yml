@@ -1,0 +1,30 @@
+---
+- name: Cisco Routers
+  hosts: routers
+  gather_facts: no
+  roles:
+    - cisco_router
+
+- name: Cisco Switches
+  hosts: switches
+  gather_facts: no
+  roles:
+    - cisco_switch
+
+- name: ASAv Firewalls
+  hosts: asa
+  gather_facts: no
+  roles:
+    - asa_fw
+
+- name: Fortinet Firewalls
+  hosts: fortinet
+  gather_facts: no
+  roles:
+    - fortinet_fw
+
+- name: Linux IPS
+  hosts: linux
+  gather_facts: yes
+  roles:
+    - linux_ips

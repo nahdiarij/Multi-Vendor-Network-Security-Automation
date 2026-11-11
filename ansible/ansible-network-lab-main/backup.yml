@@ -1,0 +1,118 @@
+# ================================
+# Playbook : Backup configurations
+# Equipements : Routeurs, Switches, ASAv, Fortinet
+# ================================
+
+# ================================
+# Backup Routeurs Cisco
+# ================================
+- name: Backup Routeurs Cisco
+  hosts: routers
+  gather_facts: no
+
+  tasks:
+    - name: Créer dossier backup local
+      file:
+        path: "./backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}"
+        state: directory
+      delegate_to: localhost
+      run_once: true
+
+    - name: Backup running-config routeurs
+      ios_command:
+        commands:
+          - show running-config
+      register: router_config
+
+    - name: Sauvegarder config routeur sur disque
+      copy:
+        content: "{{ router_config.stdout[0] }}"
+        dest: "./backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}/{{ inventory_hostname }}_running.cfg"
+      delegate_to: localhost
+
+# ================================
+# Backup Switches Cisco
+# ================================
+- name: Backup Switches Cisco
+  hosts: switches
+  gather_facts: no
+
+  tasks:
+    - name: Créer dossier backup local
+      file:
+        path: "./backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}"
+        state: directory
+      delegate_to: localhost
+      run_once: true
+
+    - name: Backup running-config switches
+      ios_command:
+        commands:
+          - show running-config
+      register: switch_config
+
+    - name: Sauvegarder config switch sur disque
+      copy:
+        content: "{{ switch_config.stdout[0] }}"
+        dest: "./backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}/{{ inventory_hostname }}_running.cfg"
+      delegate_to: localhost
+
+# ================================
+# Backup ASAv Cisco
+# ================================
+- name: Backup ASAv Cisco
+  hosts: asa
+  gather_facts: no
+
+  tasks:
+    - name: Créer dossier backup local
+      file:
+        path: "./backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}"
+        state: directory
+      delegate_to: localhost
+      run_once: true
+
+    - name: Backup running-config ASAv
+      asa_command:
+        commands:
+          - show running-config
+      register: asa_config
+
+    - name: Sauvegarder config ASAv sur disque
+      copy:
+        content: "{{ asa_config.stdout[0] }}"
+        dest: "./backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}/{{ inventory_hostname }}_running.cfg"
+      delegate_to: localhost
+
+# ================================
+# Backup Fortinet via REST API
+# ================================
+- name: Backup Fortinet
+  hosts: fortinet
+  gather_facts: no
+  connection: local
+
+  tasks:
+    - name: Créer dossier backup local
+      file:
+        path: "./backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}"
+        state: directory
+      delegate_to: localhost
+      run_once: true
+
+    - name: Télécharger config Fortinet via API
+      uri:
+        url: "http://{{ ansible_host }}/api/v2/monitor/system/config/backup?scope=global"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ fortios_token }}"
+        validate_certs: no
+        return_content: yes
+        status_code: 200
+      register: fortinet_backup
+
+    - name: Sauvegarder config Fortinet sur disque
+      copy:
+        content: "{{ fortinet_backup.content }}"
+        dest: "./backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}/{{ inventory_hostname }}_backup.conf"
+      delegate_to: localhost

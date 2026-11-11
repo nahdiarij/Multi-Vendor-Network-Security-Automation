@@ -1,0 +1,15 @@
+---
+- name: Collecter info IPS
+  command: "{{ item }}"
+  register: ips_info
+  loop:
+    - snort --version
+    - ip addr show
+    - systemctl status snort-ids
+  ignore_errors: yes
+
+- name: Sauvegarder info IPS
+  copy:
+    content: "{{ ips_info.results | map(attribute='stdout') | join('\n---\n') }}"
+    dest: "{{ playbook_dir }}/backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}/{{ inventory_hostname }}_info.txt"
+  delegate_to: localhost

@@ -1,0 +1,19 @@
+---
+- name: Collecter config ASAv
+  cisco.asa.asa_command:
+    commands:
+      - show running-config
+      - show access-list
+      - show version
+  register: asa_info
+
+- name: Sauvegarder config ASAv
+  copy:
+    content: "{{ asa_info.stdout[0] }}"
+    dest: "{{ playbook_dir }}/backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}/{{ inventory_hostname }}_running.cfg"
+  delegate_to: localhost
+
+- name: Déployer ACL
+  cisco.asa.asa_command:
+    commands: "{{ acl_commands | default([]) }}"
+  when: acl_commands is defined

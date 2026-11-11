@@ -1,0 +1,32 @@
+---
+- name: Collecter config routeur
+  cisco.ios.ios_command:
+    commands:
+      - show running-config
+      - show ip route
+      - show interfaces
+      - show version
+  register: router_info
+
+- name: Créer dossier backup
+  file:
+    path: "{{ playbook_dir }}/backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}"
+    state: directory
+  delegate_to: localhost
+  run_once: true
+- name: Sauvegarder config routeur
+  copy:
+    content: "{{ router_info.stdout[0] }}"
+    dest: "{{ playbook_dir }}/backups/{{ lookup('pipe', 'date +%Y-%m-%d') }}/{{ inventory_hostname }}_running.cfg"
+  delegate_to: localhost
+
+- name: Déployer routes statiques
+  cisco.ios.ios_static_routes:
+    config: "{{ static_routes | default([]) }}"
+    state: merged
+  when: static_routes is defined
+
+- name: Sauvegarder configuration
+  cisco.ios.ios_command:
+    commands:
+      - write memory

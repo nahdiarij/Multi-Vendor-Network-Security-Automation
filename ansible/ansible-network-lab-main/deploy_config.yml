@@ -1,0 +1,100 @@
+
+- name: Deploy Static Routes on Cisco Routers
+  hosts: routers
+  gather_facts: no
+
+  tasks:
+    - name: Deploy static routes on R2
+      cisco.ios.ios_static_routes:
+        config:
+          - address_families:
+              - afi: ipv4
+                routes:
+                  - dest: 172.x.x.x/24
+                    next_hops:
+                      - forward_router_address: 100.x.x.x
+        state: merged
+      when: inventory_hostname == "R2"
+
+    - name: Deploy static routes on R3
+      cisco.ios.ios_static_routes:
+        config:
+          - address_families:
+              - afi: ipv4
+                routes:
+                  - dest: 0.0.0.0/0
+                    next_hops:
+                      - forward_router_address: 172.x.x.x
+                  - dest: 10.3.0.0/24
+                    next_hops:
+                      - forward_router_address: 172.x.x.x
+        state: merged
+      when: inventory_hostname == "R3"
+
+    - name: Deploy static routes on R13
+      cisco.ios.ios_static_routes:
+        config:
+          - address_families:
+              - afi: ipv4
+                routes:
+                  - dest: 0.0.0.0/0
+                    next_hops:
+                      - forward_router_address: 192.x.x.x
+                  - dest: 10.0.0.0/24
+                    next_hops:
+                      - forward_router_address: 10.x.x.x
+                  - dest: 10.x.x.x/24
+                    next_hops:
+                      - forward_router_address: 10.x.x.x
+                  - dest: 10.x.x.x/24
+                    next_hops:
+                      - forward_router_address: 10.x.x.x
+                  - dest: 10.x.x.x/24
+                    next_hops:
+                      - forward_router_address: 10.x.x.x
+                  - dest: 172.x.x.x/24
+                    next_hops:
+                      - forward_router_address: 192.x.x.x
+        state: merged
+      when: inventory_hostname == "R13"
+
+    - name: Deploy static routes on R14
+      cisco.ios.ios_static_routes:
+        config:
+          - address_families:
+              - afi: ipv4
+                routes:
+                  - dest: 0.0.0.0/0
+                    next_hops:
+                      - forward_router_address: 10.x.x.x
+                  - dest: 172.x.x.x/24
+                    next_hops:
+                      - forward_router_address: 10.x.x.x
+        state: merged
+      when: inventory_hostname == "R14"
+
+    - name: Deploy static routes on R15
+      cisco.ios.ios_static_routes:
+        config:
+          - address_families:
+              - afi: ipv4
+                routes:
+                  - dest: 0.0.0.0/0
+                    next_hops:
+                      - forward_router_address: 10.x.x.x
+                  - dest: 10.x.x.x/24
+                    next_hops:
+                      - forward_router_address: 10.x.x.x
+                  - dest: 10.x.x.x/24
+                    next_hops:
+                      - forward_router_address: 10.x.x.x
+                  - dest: 10.x.x.x/24
+                    next_hops:
+                      - forward_router_address: 10.x.x.x
+        state: merged
+      when: inventory_hostname == "R15"
+
+    - name: Save configuration
+      cisco.ios.ios_command:
+        commands:
+          - write memory
