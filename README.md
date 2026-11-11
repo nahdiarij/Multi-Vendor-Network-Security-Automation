@@ -1,68 +1,121 @@
-# Multi-Vendor Network Security Architecture & Automation
+# 🛡️ Architecture de Cybersécurité Multicouche : Conception et Automatisation
 
-## Project Overview
+> Projet de Fin d'Études (PFE) — ESPRIT, 2025-2026
+> Réalisé par **Arij Nahdi** · Encadrant ESPRIT : M. Hamdi Bouslehi · Encadrant entreprise : M. Khalil Nawar (OneTech Business Solution)
 
-This project focuses on the design, implementation, and automation of a secure multi-layer, multi-vendor network architecture.
+Conception, déploiement et automatisation d'une infrastructure de sécurité défensive en **défense en profondeur** (zones WAN / DMZ / LAN), administrée via **Ansible**, **Terraform**, **Python** et un pipeline **CI/CD GitLab**.
 
-The infrastructure was designed and deployed in an EVE-NG virtual laboratory, integrating Cisco and Fortinet security solutions.
+![Topologie EVE-NG](docs/architecture/Architecture-physique2.png)
 
-The project also explores Infrastructure as Code (IaC) approaches using Terraform and Ansible to automate infrastructure provisioning and network device configurations.
+---
 
-Security validation was performed using Kali Linux and Snort to evaluate intrusion detection capabilities.
+## 📌 Contexte et problématique
 
-## Project Objectives
+Les configurations manuelles (CLI) d'équipements de sécurité hétérogènes provoquent des erreurs humaines, des politiques incohérentes et des déploiements lents.
 
-- Design a multi-layer secure network architecture.
-- Integrate multiple network and security vendors.
-- Implement network security mechanisms.
-- Automate infrastructure provisioning and configuration.
-- Validate security controls through controlled testing.
+**Question centrale :** comment concevoir une architecture de cybersécurité multicouche efficace et en automatiser la gestion pour garantir cohérence, réactivité et fiabilité ?
 
-## Technologies & Tools
+## 🏗️ Architecture
 
-| Category | Technologies |
-|---|---|
-| Network Simulation | EVE-NG |
-| Network Security | Cisco, Fortinet |
-| Cisco Solutions | ASA, FTD, WSA, ESA |
-| Firewall | FortiGate |
-| Infrastructure as Code | Terraform |
-| Configuration Automation | Ansible |
-| Security Testing | Kali Linux |
-| Intrusion Detection | Snort |
-| Virtualization | KVM, Ubuntu |
+| Équipement | Zone | Rôle |
+|---|---|---|
+| FortiGate 500E | WAN / Périmètre | Pare-feu principal, inspection SSL/TLS, VPN SSL, VPN site-à-site |
+| Cisco ASA | DMZ | Pare-feu secondaire, contrôle d'accès inter-zones |
+| Cisco FTD (FDM) | DMZ / LAN | Access Control Policy, SSL Decryption |
+| Snort IPS | DMZ / LAN | Détection et prévention d'intrusions (mode inline) |
+| Cisco WSA | LAN | Filtrage web (catégories URL, HTTPS proxy) |
+| Cisco ESA | DMZ | Sécurité email (anti-spam, anti-virus, DLP, SPF/DMARC) |
+| Cisco CSR1000v | WAN / DMZ | Routage inter-zones, NAT |
+| Cisco Catalyst 2960 | LAN | Commutation, VLANs |
 
-## Project Architecture
+### Flux entre zones
 
-The infrastructure follows a multi-layer network architecture integrating different network and security components.
+| Source | Destination | Statut |
+|---|---|---|
+| WAN | DMZ | ✅ Autorisé (web, email) |
+| WAN | LAN | ❌ Interdit |
+| LAN | WAN | ✅ Autorisé (filtré via WSA) |
+| LAN | DMZ | ✅ Autorisé |
+| DMZ | LAN | ❌ Interdit |
+| VPN SSL | LAN | ✅ Autorisé |
 
-*Architecture diagram will be added here.*
+![Architecture logique](docs/architecture/architecture-logique.png)
 
-## Implementation
+## ⚙️ Automatisation
 
-### 1. Infrastructure Design
-- Design and deployment of the network topology using EVE-NG.
-- Integration of routers, switches, and security appliances.
-- Implementation of Cisco and Fortinet solutions.
+Le dossier [`ansible/`](ansible/) contient le projet `ansible-network-lab` :
 
-### 2. Infrastructure Automation
-- Terraform for infrastructure provisioning.
-- Ansible for automated network device configuration.
-- Automated deployment workflows.
+```
+ansible/
+├── inventory.ini          # Inventaire des équipements
+├── group_vars/all         # Variables globales
+├── roles/
+│   ├── fortinet_fw        # FortiGate
+│   ├── asa_fw             # Cisco ASA
+│   ├── cisco_router       # Routeurs
+│   ├── cisco_switch       # Switches
+│   └── linux_ips          # Snort IPS
+├── site.yml               # Playbook principal (déploiement global)
+├── backup.yml             # Sauvegarde horodatée des configurations
+├── drift_detection.yml    # Détection de dérive de configuration
+├── deploy_acl.yml         # Déploiement des ACLs Cisco
+└── collect_info.yml       # Collecte d'état des équipements
+```
 
-### 3. Security Testing & Validation
-- Controlled security testing using Kali Linux.
-- Snort-based intrusion detection validation.
-- Analysis of security alerts and detection results.
+- **Terraform** (`terraform/`) : provisioning déclaratif et reproductible.
+- **Python / Netmiko** (`scripts/`) : collecte d'informations et vérifications.
+- **CI/CD GitLab** (`.gitlab-ci.yml`) : sauvegarde automatique à chaque push sur `main` (artefacts conservés 7 jours) et détection de dérive (manuelle ou planifiée).
 
-## Project Documentation
+![Pipeline CI/CD](docs/screenshots/pipeline-cicd.png)
 
-Additional technical documentation, architecture diagrams, configurations, and validation results will be progressively added to this repository.
+## 🧪 Tests et validation
 
-## Author
+| Scénario | Outil | Résultat |
+|---|---|---|
+| Scan de ports | Nmap | 🛑 Bloqué par Snort IPS |
+| Attaque par flood TCP (DoS) | hping3 | 🛑 Bloqué par Snort IPS |
+| Man-in-the-Middle (ARP poisoning) | Ettercap | ⚠️ **Non détecté** (couche 2) |
 
-**Arij Nahdi**
+> **Limite identifiée :** Snort analyse principalement les couches 3/4. L'ARP poisoning (couche 2) nécessite **Dynamic ARP Inspection (DAI)** sur les Catalyst 2960 ou un outil comme ARPwatch.
 
-Cybersecurity Engineer | Network Security | Infrastructure Automation
+## 🧰 Technologies
 
-[LinkedIn](https://www.linkedin.com/in/arij-nahdi/)
+`EVE-NG` · `KVM` · `Fortinet FortiGate` · `Cisco ASA / FTD / WSA / ESA` · `Snort` · `Ansible` · `Terraform` · `Python (Netmiko)` · `GitLab CI/CD` · `Kali Linux`
+
+## 🚀 Utilisation
+
+```bash
+# Prérequis : Ansible, Python 3.x, accès aux équipements (lab EVE-NG)
+git clone https://github.com/<votre-user>/<nom-du-repo>.git
+cd <nom-du-repo>/ansible
+
+# Adapter l'inventaire et les variables (voir inventory.example.ini)
+cp inventory.example.ini inventory.ini
+
+# Sauvegarde des configurations
+ansible-playbook -i inventory.ini backup.yml
+
+# Détection de dérive
+ansible-playbook -i inventory.ini drift_detection.yml
+
+# Déploiement complet
+ansible-playbook -i inventory.ini site.yml
+```
+
+> ⚠️ Les identifiants sont à fournir via **Ansible Vault** ou variables d'environnement. Aucun secret n'est versionné dans ce dépôt.
+
+## ⚠️ Limites et perspectives
+
+- Environnement entièrement virtualisé (EVE-NG)
+- FTD géré via FDM (et non FMC)
+- Haute disponibilité / failover non implémentée
+- Perspectives : SIEM (Splunk / ELK), HA, DAI, FMC, extension des playbooks (MAJ signatures IPS, rotation de certificats), Zero Trust
+
+## 👩‍💻 Auteur
+
+**Arij Nahdi** — Étudiante en informatique, ESPRIT
+[LinkedIn](https://www.linkedin.com/in/) · [Email](mailto:)
+
+## 📜 Licence
+
+Projet académique. Voir [LICENSE](LICENSE).
