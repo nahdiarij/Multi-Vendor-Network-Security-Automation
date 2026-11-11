@@ -113,7 +113,7 @@ ansible-playbook -i inventory.ini site.yml
 
 ## 👩‍💻 Auteur
 
-**Arij Nahdi** — Étudiante en informatique, ESPRIT
+**Arij Nahdi** — Cybersecurity Engineer | Network Security | Infrastructure Automation
 [LinkedIn](https://www.linkedin.com/in/) · [Email](mailto:)
 
 ## 📜 Licence
