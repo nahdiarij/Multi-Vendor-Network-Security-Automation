@@ -77,6 +77,19 @@ ansible/
 | Man-in-the-Middle (ARP poisoning) | Ettercap | ⚠️ **Non détecté** (couche 2) |
 
 > **Limite identifiée :** Snort analyse principalement les couches 3/4. L'ARP poisoning (couche 2) nécessite **Dynamic ARP Inspection (DAI)** sur les Catalyst 2960 ou un outil comme ARPwatch.
+> ## 📸 Captures et configurations
+
+Captures de configuration de chaque équipement, déployés sur EVE-NG :
+
+| Équipement | Zone | Captures |
+|---|---|---|
+| FortiGate 500E | WAN / Périmètre | [Voir](docs/screenshots/fortigate) |
+| Cisco ASA | DMZ | [Voir](docs/screenshots/asa) |
+| Cisco FTD (FDM) | DMZ / LAN | [Voir](docs/screenshots/FTD) |
+| Cisco WSA | LAN | [Voir](docs/screenshots/wsa) |
+| Cisco ESA | DMZ | [Voir](docs/screenshots/esa) |
+| Routeurs et switch | WAN / DMZ / LAN | [Voir](docs/screenshots/reseau) |
+| Snort IPS et tests d'attaque | DMZ / LAN | [Voir](docs/screenshots/test) |
 
 ## 🧰 Technologies
 
